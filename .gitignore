@@ -1,0 +1,21 @@
+# Firmware tem a password do Wi-Fi e o token -> NÃO publicar
+esp32_autocarro/
+esp32_paragem/
+esp32_paragem_pandora/
+*.rar
+
+# Python
+__pycache__/
+*.db
+.env
+.venv/
+
+# Flutter / Android
+android_app/build/
+android_app/android/build/
+android_app/.dart_tool/
+android_app/android/.gradle/
+android_app/android/local.properties
+android_app/android/app/.cxx/
+*.apk
+.claude/

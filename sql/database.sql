@@ -1,0 +1,43 @@
+CREATE DATABASE IF NOT EXISTS bus_alertas
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE bus_alertas;
+
+CREATE TABLE IF NOT EXISTS buses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(30) NOT NULL UNIQUE,
+    latitude DECIMAL(10,7) NULL,
+    longitude DECIMAL(10,7) NULL,
+    gps_fix TINYINT(1) NOT NULL DEFAULT 0,
+    led_status TINYINT(1) NOT NULL DEFAULT 0,
+    last_seen DATETIME NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS stops (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(30) NOT NULL UNIQUE,
+    nome VARCHAR(100) NOT NULL,
+    latitude DECIMAL(10,7) NOT NULL,
+    longitude DECIMAL(10,7) NOT NULL,
+    ldr_value INT NOT NULL DEFAULT 0,
+    detected TINYINT(1) NOT NULL DEFAULT 0,
+    last_seen DATETIME NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS alerts (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    stop_id INT NOT NULL,
+    bus_code VARCHAR(30) NULL,
+    type VARCHAR(30) NOT NULL DEFAULT 'CHEGADA',
+    message VARCHAR(255) NOT NULL,
+    ldr_value INT NULL,
+    created_at DATETIME NOT NULL,
+    INDEX(created_at),
+    CONSTRAINT fk_alert_stop FOREIGN KEY (stop_id) REFERENCES stops(id)
+);
+
+INSERT INTO stops (codigo,nome,latitude,longitude) VALUES
+('RONIL','Ronil',-25.9641900,32.5761100),
+('PANDORA','Pandora',-25.9663470,32.5800335)
+ON DUPLICATE KEY UPDATE nome=VALUES(nome), latitude=VALUES(latitude), longitude=VALUES(longitude);

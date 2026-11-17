@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B1120">
+  <meta name="description" content="Monitorização em tempo real de chegadas de autocarros às paragens Ronil e Pandora.">
+  <title>Bus Alertas</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icon.svg') }}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600&family=Fira+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=3">
+</head>
+<body>
+<div class="app">
+
+  <!-- ===================== TOPO ===================== -->
+  <header class="topbar glass">
+    <div class="brand">
+      <span class="brand-icon"><i class="fa-solid fa-bus-simple" aria-hidden="true"></i></span>
+      <div>
+        <h1>Bus Alertas</h1>
+        <p class="muted">Ronil &middot; Pandora &middot; Maputo</p>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <span id="live" class="live-pill is-connecting" role="status" aria-live="polite">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span id="liveText">A ligar…</span>
+      </span>
+      <button id="soundBtn" class="icon-btn" type="button" aria-pressed="true" aria-label="Desactivar som">
+        <i class="fa-solid fa-volume-high" aria-hidden="true"></i>
+      </button>
+      <button id="notifyBtn" class="icon-btn" type="button" aria-label="Activar notificações">
+        <i class="fa-regular fa-bell" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===================== KPIs ===================== -->
+  <section class="kpis" aria-label="Resumo">
+    <article class="kpi glass">
+      <span class="kpi-icon green"><i class="fa-solid fa-bus" aria-hidden="true"></i></span>
+      <div><p class="kpi-label">Autocarros online</p><p class="kpi-value mono" id="kBuses">–</p></div>
+    </article>
+    <article class="kpi glass">
+      <span class="kpi-icon blue"><i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i></span>
+      <div><p class="kpi-label">Paragens online</p><p class="kpi-value mono" id="kStops">–</p></div>
+    </article>
+    <article class="kpi glass">
+      <span class="kpi-icon amber"><i class="fa-solid fa-flag-checkered" aria-hidden="true"></i></span>
+      <div><p class="kpi-label">Chegadas (24 h)</p><p class="kpi-value mono" id="kArrivals">–</p></div>
+    </article>
+    <article class="kpi glass">
+      <span class="kpi-icon violet"><i class="fa-regular fa-clock" aria-hidden="true"></i></span>
+      <div><p class="kpi-label">Última chegada</p><p class="kpi-value mono" id="kLast">–</p></div>
+    </article>
+  </section>
+
+  <!-- ===================== CONTEÚDO ===================== -->
+  <main class="layout">
+    <section class="map-card glass" aria-label="Mapa">
+      <div id="map" role="application" aria-label="Mapa com autocarros e paragens"></div>
+      <div class="map-tools">
+        <button class="chip-btn" id="fitBtn" type="button"><i class="fa-solid fa-expand" aria-hidden="true"></i> Ver tudo</button>
+        <button class="chip-btn" id="followBtn" type="button" aria-pressed="false"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Seguir autocarro</button>
+      </div>
+      <div class="map-legend glass">
+        <span><i class="fa-solid fa-bus" aria-hidden="true"></i> Autocarro</span>
+        <span><i class="fa-solid fa-location-dot ok" aria-hidden="true"></i> Paragem online</span>
+        <span><i class="fa-solid fa-location-dot off" aria-hidden="true"></i> Offline</span>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="panel glass">
+        <div class="panel-head">
+          <h2><i class="fa-solid fa-signs-post" aria-hidden="true"></i> Paragens</h2>
+        </div>
+        <div id="stops" class="stops"></div>
+      </div>
+
+      <div class="panel glass">
+        <div class="panel-head">
+          <h2><i class="fa-solid fa-bus" aria-hidden="true"></i> Frota</h2>
+        </div>
+        <div id="buses" class="buses"></div>
+      </div>
+
+      <div class="panel glass grow">
+        <div class="panel-head">
+          <h2><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Histórico</h2>
+          <span class="badge mono" id="histCount">0</span>
+        </div>
+        <ol id="history" class="history" aria-live="polite"></ol>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<!-- Alerta de chegada -->
+<div id="toast" class="toast" role="alert" aria-live="assertive" hidden>
+  <span class="toast-icon"><i class="fa-solid fa-bell" aria-hidden="true"></i></span>
+  <div class="toast-body">
+    <p class="toast-title">Autocarro na paragem</p>
+    <p class="toast-msg" id="toastMsg"></p>
+    <p class="toast-time mono" id="toastTime"></p>
+  </div>
+  <button class="icon-btn small" id="toastClose" type="button" aria-label="Fechar alerta">
+    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+  </button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=3"></script>
+</body>
+</html>
